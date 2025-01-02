@@ -1,0 +1,12 @@
+[package]
+name = "tungsten_utils"
+authors.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+string_cache = "0.8.7"
+target = "2.1.0"
+
+

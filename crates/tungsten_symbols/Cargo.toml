@@ -1,0 +1,11 @@
+[package]
+name = "tungsten_symbols"
+authors.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bitflags = "2.6.0"
+indextree = "4.7.3"
+tungsten_utils.workspace = true

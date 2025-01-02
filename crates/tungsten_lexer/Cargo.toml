@@ -1,0 +1,13 @@
+[package]
+name = "tungsten_lexer"
+authors.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tungsten_utils.workspace = true
+tungsten_context.workspace = true
+anyhow.workspace = true
+codespan-reporting.workspace = true
+thiserror.workspace = true

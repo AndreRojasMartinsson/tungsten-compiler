@@ -1,0 +1,17 @@
+[package]
+name = "tungsten_driver"
+authors.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+clap = { version = "4.5.23", features = ["derive"] }
+clap-verbosity-flag = "3.0.2"
+env_logger = "0.11.6"
+tungsten_utils.workspace = true
+tungsten_lexer.workspace = true
+tungsten_context.workspace = true
+tungsten_symbols.workspace = true
+anyhow.workspace = true
+memmap2 = "0.9.5"

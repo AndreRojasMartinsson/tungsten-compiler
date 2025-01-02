@@ -1,0 +1,12 @@
+[package]
+name = "tungsten_context"
+authors.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tungsten_symbols.workspace = true
+tungsten_utils.workspace = true
+anyhow.workspace = true
+colored = "2.2.0"

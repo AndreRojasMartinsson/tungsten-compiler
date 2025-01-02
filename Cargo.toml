@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+default-members = ["crates/tungsten_driver"]
+members = [ "crates/tungsten_context","crates/tungsten_driver", "crates/tungsten_lexer", "crates/tungsten_symbols", "crates/tungsten_utils"]
+
+[workspace.package]
+authors = ["AndreRojasMartinsson"]
+license = "GPL-3.0-only"
+license-file = "LICENSE"
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+tungsten_utils = {path = "crates/tungsten_utils"}
+tungsten_context = {path = "crates/tungsten_context"}
+tungsten_lexer = {path = "crates/tungsten_lexer"}
+tungsten_symbols = {path = "crates/tungsten_symbols"}
+anyhow = "1.0.95"
+codespan-reporting = "0.11.1"
+thiserror = "2.0.9"

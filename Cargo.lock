@@ -546,6 +546,7 @@ name = "tungsten_context"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "codespan-reporting",
  "colored",
  "tungsten_symbols",
  "tungsten_utils",

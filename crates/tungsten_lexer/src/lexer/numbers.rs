@@ -12,7 +12,7 @@ impl Lexer<'_> {
 
     pub(crate) fn read_hex_digit(&mut self) -> Result<u32, LexerError> {
         match self.chars.next() {
-            None => Err(LexerError::InvalidEscape),
+            None => Err(LexerError::InvalidEscape(self.buffer.clone())),
             Some(c @ '0'..='9') => Ok(c as u32 - '0' as u32),
             Some(c @ 'a'..='f') => Ok(10 + (c as u32 - 'a' as u32)),
             Some(c @ 'A'..='F') => Ok(10 + (c as u32 - 'A' as u32)),

@@ -78,7 +78,7 @@ impl Lexer<'_> {
                     value = (value << 4) | self.read_hex_digit()?;
 
                     match char::try_from(value) {
-                        Err(_) => return Err(LexerError::InvalidEscape),
+                        Err(_) => return Err(LexerError::InvalidEscape(self.buffer.clone())),
                         Ok(c) => self.buffer.push(c),
                     }
                 }
@@ -86,7 +86,14 @@ impl Lexer<'_> {
                     let c = self.read_unicode_escape_sequence_after_backslash_and_u()?;
                     self.buffer.push(c)
                 }
-                other => self.buffer.push(other),
+                // other => self.buffer.push(other),
+                other => {
+                    let offset = self.offset();
+                    self.report_error(
+                        LexerError::InvalidEscape(format!("\\{other}")),
+                        offset - 2..offset,
+                    );
+                }
             },
         }
 
@@ -103,7 +110,7 @@ impl Lexer<'_> {
                 let value = self.read_code_point()?;
                 match self.chars.next() {
                     Some('}') => {}
-                    _ => return Err(LexerError::InvalidEscape),
+                    _ => return Err(LexerError::InvalidEscape(self.buffer.clone())),
                 }
 
                 value
@@ -119,7 +126,7 @@ impl Lexer<'_> {
 
         loop {
             let next = match self.peek() {
-                None => return Err(LexerError::InvalidEscape),
+                None => return Err(LexerError::InvalidEscape(self.buffer.clone())),
                 Some(c @ '0'..='9') => c as u32 - '0' as u32,
                 Some(c @ 'a'..='f') => 10 + (c as u32 - 'a' as u32),
                 Some(c @ 'A'..='F') => 10 + (c as u32 - 'A' as u32),
@@ -128,7 +135,7 @@ impl Lexer<'_> {
             self.chars.next();
             value = (value << 4) | next;
             if value > 0x10FFFF {
-                return Err(LexerError::InvalidEscape);
+                return Err(LexerError::InvalidEscape(self.buffer.clone()));
             }
         }
 

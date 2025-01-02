@@ -1,6 +1,6 @@
-use std::str::Chars;
+use std::{ops::Range, str::Chars};
 
-use tungsten_context::CompilerContext;
+use tungsten_context::{error_builders, CompilerContext};
 use tungsten_utils::{atom, Atom};
 
 mod numbers;
@@ -41,7 +41,7 @@ impl<'a> Lexer<'a> {
             tokens.push(token);
         }
 
-        self.context.report_errors();
+        self.context.emit_errors();
 
         tokens
     }
@@ -53,7 +53,6 @@ impl<'a> Lexer<'a> {
 
         let trimmed = &self.source[start..end].trim_start_matches(char::is_whitespace);
         let len = self.source[start..end].len() - trimmed.len();
-        println!("{:?}", &self.source[start + len..end]);
 
         // Column offset computation causes first line to have incorrect column number (starting at 0,
         // instead of 1)
@@ -363,47 +362,47 @@ impl<'a> Lexer<'a> {
                         }
                     }
                     Some('0'..='9') => {
-                        self.buffer.clear();
+                        self.clear_buffer();
                         self.buffer.push('.'); // Push the initial period
 
+                        let start = self.offset();
                         if let Err(err) = self.read_float_after_decimal_point() {
-                            self.report_error(err);
+                            let end = self.offset();
+                            self.report_error(err, start..end);
                         }
 
-                        let raw_value = self.buffer.clone();
-                        self.buffer.clear();
+                        let value: f64 = self.flush_buffer().parse().expect("Could not parse f64");
 
-                        let parsed = raw_value.parse::<f64>().expect("Could not parse to f64");
-
-                        return (Kind::FloatLiteral, Some(Value::Float(parsed)));
+                        return (Kind::FloatLiteral, Some(Value::Float(value)));
                     }
                     _ => return (Kind::Period, None),
                 },
                 // Read Zero, or Float
                 '0' => {
-                    self.buffer.clear();
+                    self.clear_buffer();
                     self.buffer.push('0'); // Push the initial zero
 
+                    let start = self.offset();
                     match self.read_numeric_literal_starting_with_zero() {
                         Err(err) => {
-                            self.report_error(err);
+                            let end = self.offset();
+                            self.report_error(err, start..end);
                         }
                         Ok(numeric_result) => {
-                            let raw_value = self.buffer.clone();
-                            self.buffer.clear();
+                            let value = self.flush_buffer();
 
                             return match numeric_result {
                                 NumericResult::Integer => {
-                                    let parsed =
-                                        raw_value.parse::<u64>().expect("Could not parse to u64");
+                                    let value =
+                                        value.parse::<u64>().expect("Could not parse to u64");
 
-                                    (Kind::IntegerLiteral, Some(Value::Integer(parsed)))
+                                    (Kind::IntegerLiteral, Some(Value::Integer(value)))
                                 }
                                 NumericResult::Float => {
-                                    let parsed =
-                                        raw_value.parse::<f64>().expect("Could not parse to f64");
+                                    let value =
+                                        value.parse::<f64>().expect("Could not parse to f64");
 
-                                    (Kind::FloatLiteral, Some(Value::Float(parsed)))
+                                    (Kind::FloatLiteral, Some(Value::Float(value)))
                                 }
                             };
                         }
@@ -411,29 +410,30 @@ impl<'a> Lexer<'a> {
                 }
                 // Read number
                 '1'..='9' => {
-                    self.buffer.clear();
+                    self.clear_buffer();
                     self.buffer.push(c); // Push the initial digit
 
+                    let start = self.offset();
                     match self.read_decimal_literal_after_first_digit() {
                         Err(err) => {
-                            self.report_error(err);
+                            let end = self.offset();
+                            self.report_error(err, start..end);
                         }
                         Ok(numeric_result) => {
-                            let raw_value = self.buffer.clone();
-                            self.buffer.clear();
+                            let value = self.flush_buffer();
 
                             return match numeric_result {
                                 NumericResult::Integer => {
-                                    let parsed =
-                                        raw_value.parse::<u64>().expect("Could not parse to u64");
+                                    let value =
+                                        value.parse::<u64>().expect("Could not parse to u64");
 
-                                    (Kind::IntegerLiteral, Some(Value::Integer(parsed)))
+                                    (Kind::IntegerLiteral, Some(Value::Integer(value)))
                                 }
                                 NumericResult::Float => {
-                                    let parsed =
-                                        raw_value.parse::<f64>().expect("Could not parse to f64");
+                                    let value =
+                                        value.parse::<f64>().expect("Could not parse to f64");
 
-                                    (Kind::FloatLiteral, Some(Value::Float(parsed)))
+                                    (Kind::FloatLiteral, Some(Value::Float(value)))
                                 }
                             };
                         }
@@ -441,70 +441,95 @@ impl<'a> Lexer<'a> {
                 }
                 // Read String
                 '"' => {
-                    self.buffer.clear();
+                    self.clear_buffer();
 
+                    let start = self.offset();
                     if let Err(err) = self.read_string_literal() {
-                        self.report_error(err);
+                        let end = self.offset();
+                        self.report_error(err, start..end);
                     }
 
-                    let raw_value = self.buffer.clone();
-                    self.buffer.clear();
+                    let value = self.flush_buffer();
 
-                    return (Kind::StringLiteral, Some(Value::String(atom!(raw_value))));
+                    return (Kind::StringLiteral, Some(Value::String(atom!(value))));
                 }
                 '_' | 'a'..='z' | 'A'..='Z' => return self.read_identifier(c),
                 ' ' | '\t' | '\r' | '\n' => {}
                 // TODO COMMENTS!
                 ch => {
-                    self.report_error(LexerError::NonAsciiCharacter(ch));
+                    let span = self.offset() - 2..self.offset();
+                    // println!(
+                    //     "Unknown: `{}` `{}` EHeh",
+                    //     self.offset(),
+                    //     &self.source[self.offset() - 2..self.offset()]
+                    // );
+                    self.report_error(LexerError::NonAsciiCharacter(ch), span);
                 }
             }
         }
         (Kind::Eof, None)
     }
 
-    fn report_error(&mut self, err: LexerError) {
+    pub(crate) fn clear_buffer(&mut self) {
+        self.buffer.clear();
+    }
+
+    pub(crate) fn flush_buffer(&mut self) -> String {
+        let raw = self.buffer.clone();
+
+        self.clear_buffer();
+
+        raw
+    }
+
+    fn report_error(&mut self, err: LexerError, span: Range<usize>) {
         match err {
             LexerError::NonAsciiCharacter(ch) => {
                 self.context
-                    .add_error(&format!("Encountered non-ascii character `{ch}`"));
+                    .add_error(error_builders::build_non_ascii_character_error(span, ch));
             }
             LexerError::UnterminatedString => {
-                self.context.add_error("Unterminated String Literal");
+                self.context
+                    .add_error(error_builders::build_unterminated_string_error(span));
             }
-            LexerError::InvalidEscape => {
-                self.context.add_error("Invalid String Escape Sequence");
+            LexerError::InvalidEscape(escape) => {
+                self.context
+                    .add_error(error_builders::build_invalid_escape_error(span, &escape));
             }
             LexerError::InvalidUnicode => {
-                self.context.add_error("Invalid Unicode Code Point");
-            }
-            LexerError::UnicodeEscape => {
                 self.context
-                    .add_error("Unicode escape sequences (surrogates)");
+                    .add_error(error_builders::build_invalid_unicode_codepoint_error(
+                        span.clone(),
+                        &self.source[span],
+                    ));
             }
+            LexerError::UnicodeEscape => unimplemented!(),
             LexerError::IllegalCharacter { ch, ctx } => {
                 self.context
-                    .add_error(&format!("Illegal character: `{ch}`, in {ctx}"));
+                    .add_error(error_builders::build_illegal_character_error(
+                        span.end - 1..span.end,
+                        ch,
+                        ctx,
+                    ));
             }
             LexerError::UnexpectedEnd(ctx) => {
                 self.context
-                    .add_error(&format!("Encountered unexpected end of stream in {ctx}"));
+                    .add_error(error_builders::build_unexpected_end_error(span, ctx));
             }
-        };
+        }
     }
 
     fn read_identifier(&mut self, initial_char: char) -> (Kind, Option<Value>) {
-        self.buffer.clear();
+        self.clear_buffer();
         self.buffer.push(initial_char);
 
         while let Some('_' | 'a'..='z' | 'A'..='Z' | '0'..='9') = self.peek() {
             self.push_to_buffer();
         }
 
-        let raw_value = self.buffer.clone();
-        self.buffer.clear();
+        let value = self.flush_buffer();
 
-        match raw_value.as_ref() {
+        match value.as_ref() {
             "true" => (Kind::BooleanLiteral, Some(Value::Boolean(true))),
             "false" => (Kind::BooleanLiteral, Some(Value::Boolean(false))),
             other if is_keyword(other) => (str_to_keyword_kind(other).unwrap(), None),

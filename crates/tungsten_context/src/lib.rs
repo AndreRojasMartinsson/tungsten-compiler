@@ -1,9 +1,20 @@
+use codespan_reporting::{
+    diagnostic::Diagnostic,
+    files::SimpleFile,
+    term::{
+        self,
+        termcolor::{ColorChoice, StandardStream},
+        Chars,
+    },
+};
 use colored::Colorize;
 use std::path::{Path, PathBuf};
 use tungsten_symbols::SymbolTable;
 
 use anyhow::Result;
 use tungsten_utils::guess_host_target_triple;
+
+pub mod error_builders;
 
 fn get_name(path: &Path) -> Result<&str> {
     let file_name = path.file_name().ok_or_else(|| {
@@ -23,10 +34,12 @@ pub struct CompilerContext<'a> {
     pub symbols: SymbolTable,
     pub current_scope: Option<SymbolTable>,
 
+    file: SimpleFile<&'a str, &'a str>,
+
     file_name: &'a str,
     artifact_dir: &'a Path,
     source_code: &'a str,
-    errors: Vec<String>,
+    errors: Vec<Diagnostic<()>>,
     /// Architecture
     target_architecture: String,
     optimization_level: u8,
@@ -39,6 +52,7 @@ impl<'a> CompilerContext<'a> {
 
         Self {
             file_path,
+            file: SimpleFile::new(file_name, source_code),
             file_name,
             source_code,
             artifact_dir,
@@ -60,18 +74,31 @@ impl<'a> CompilerContext<'a> {
         self
     }
 
-    pub fn add_error(&mut self, err: &str) -> &mut Self {
-        self.errors.push(err.to_string());
-        self
+    pub fn add_error(&mut self, diag: Diagnostic<()>) {
+        self.errors.push(diag);
     }
 
-    pub fn report_errors(&mut self) {
+    // pub fn add_error(&mut self, err: &str) -> &mut Self {
+    //     self.errors.push(err.to_string());
+    //     self
+    // }
+
+    pub fn emit_errors(&mut self) {
         if self.errors.is_empty() {
             return;
         }
 
+        let mut writer = StandardStream::stderr(ColorChoice::Always);
+        let config = codespan_reporting::term::Config {
+            start_context_lines: 4,
+            end_context_lines: 4,
+            chars: Chars::ascii(),
+            display_style: term::DisplayStyle::Rich,
+            ..Default::default()
+        };
+
         for error in self.errors.clone() {
-            eprintln!("{}", error.red().bold().underline());
+            term::emit(&mut writer, &config, &self.file, &error).unwrap();
         }
     }
 

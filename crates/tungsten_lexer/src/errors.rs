@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -12,7 +14,7 @@ pub enum LexerError {
     UnterminatedString,
 
     #[error("invalid string escape sequence")]
-    InvalidEscape,
+    InvalidEscape(String),
 
     #[error("invalid unicode code point")]
     InvalidUnicode,

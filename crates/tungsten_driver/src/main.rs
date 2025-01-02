@@ -1,10 +1,4 @@
-use std::{
-    borrow::{Borrow, BorrowMut},
-    cell::RefCell,
-    fs::File,
-    path::Path,
-    sync::Mutex,
-};
+use std::{fs::File, path::Path};
 
 use anyhow::{bail, Context, Result};
 use args::{get_command, Command};

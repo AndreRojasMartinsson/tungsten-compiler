@@ -2,7 +2,7 @@ use crate::Kind;
 
 pub const KEYWORDS: &[&str] = &[
     "defer", "func", "do", "break", "continue", "if", "else", "for", "in", "loop", "while",
-    "repeat", "until", "match", "sizeof", "pub", "module", "import", "const", "var",
+    "repeat", "until", "match", "sizeof", "pub", "module", "import", "const", "var", "mut",
 ];
 
 pub fn is_keyword(value: &str) -> bool {
@@ -36,6 +36,7 @@ pub fn str_to_keyword_kind(value: &str) -> Option<Kind> {
         "import" => Some(Kind::ImportKw),
         "const" => Some(Kind::ConstKw),
         "var" => Some(Kind::VarKw),
+        "mut" => Some(Kind::MutKw),
 
         _ => None,
     }

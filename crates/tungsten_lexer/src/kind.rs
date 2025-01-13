@@ -1,6 +1,7 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Kind {
     Eof,
+    Comment,
     Illegal,
 
     // 1 Character Tokens
@@ -46,6 +47,8 @@ pub enum Kind {
     DoubleDash,
     DoubleLess,
     DoubleGreater,
+    /// <|
+    Assign,
     /// =>
     FatArrow,
     /// ->
@@ -58,13 +61,17 @@ pub enum Kind {
     LParPipe,
     /// |)
     RParPipe,
+    /// (<
+    LParArrow,
+    /// >)
+    RParArrow,
     /// $$
     DoubleDollar,
     /// ^=
     CaretAssign,
-    /// |=
-    AmpersandAssign,
     /// &=
+    AmpersandAssign,
+    /// |=
     PipeAssign,
     /// +=
     PlusAssign,
@@ -117,6 +124,7 @@ pub enum Kind {
     WhileKw,
     RepeatKw,
     UntilKw,
+    MutKw,
     MatchKw,
     SizeofKw,
     PubKw,
@@ -126,21 +134,50 @@ pub enum Kind {
     VarKw,
 
     // Primitive types
-    /// void
-    VoidType,
-    /// nil
-    NilType,
-    /// uint
-    UIntType,
-    /// int
-    IntType,
-    /// float
-    FloatType,
-    /// bool
-    BoolType,
-    /// str
-    StrType,
-
+    PrimitiveType,
+    // void
+    // VoidType,
+    // nil
+    // NilType,
+    // uint
+    // UIntType,
+    // int
+    // IntType,
+    // float
+    // FloatType,
+    // bool
+    // BoolType,
+    // str
+    // StrType,
     /// Identifier
     Identifier,
+}
+
+impl Kind {
+    pub fn is_binary_op(&self) -> bool {
+        matches!(
+            self,
+            Kind::Plus
+                | Kind::Dash
+                | Kind::DoubleAsterisk
+                | Kind::DoubleSlash
+                | Kind::Slash
+                | Kind::Percent
+                | Kind::Asterisk
+                | Kind::LessGreater
+                | Kind::DoubleGreater
+                | Kind::DoubleLess
+                | Kind::GreaterEq
+                | Kind::Greater
+                | Kind::LessEq
+                | Kind::Less
+                | Kind::Ampersand
+                | Kind::Pipe
+                | Kind::Caret
+                | Kind::Equal
+                | Kind::BangEqual
+                | Kind::DoubleAmpersand
+                | Kind::DoublePipe
+        )
+    }
 }

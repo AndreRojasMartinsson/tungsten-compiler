@@ -8,6 +8,27 @@ const INVALID_ESCAPE_SEQUENCE_CODE: &str = "003";
 const ILLEGAL_CHARACTER_CODE: &str = "004";
 const UNEXPECTED_END_CODE: &str = "005";
 const INVALID_UNICODE_CODEPOINT: &str = "006";
+const UNTERMINATED_COMMENT_CODE: &str = "007";
+const DUPLICATE_FUNCTION_DECLARATION_CODE: &str = "008";
+
+pub fn build_duplicate_function_error(
+    name: String,
+    func_span: Range<usize>,
+    orig_span: Range<usize>,
+) -> Diagnostic<()> {
+    Diagnostic::error()
+        .with_message(format!(
+            "Encountered duplicate function declaration `{name}`"
+        ))
+        .with_code(format!("E{DUPLICATE_FUNCTION_DECLARATION_CODE}"))
+        .with_notes(vec![
+            "Make sure you use unique function names, or use scope shadowing to temporarily declare new function with same name".to_string(),
+        ])
+        .with_labels(vec![
+            Label::primary((), func_span).with_message("duplicate function declaration here"),
+            Label::primary((), orig_span).with_message("original function declaration here")
+        ])
+}
 
 pub fn build_non_ascii_character_error(span: Range<usize>, ch: char) -> Diagnostic<()> {
     Diagnostic::error()
@@ -74,6 +95,18 @@ pub fn build_unterminated_string_error(span: Range<usize>) -> Diagnostic<()> {
         ])
 }
 
+pub fn build_unterminated_comment_error(span: Range<usize>) -> Diagnostic<()> {
+    Diagnostic::error()
+        .with_message("Encountered an unterminated multi-line comment")
+        .with_code(format!("E{UNTERMINATED_COMMENT_CODE}"))
+        .with_notes(vec![
+            "Make sure you properly closed the multi line comments".to_string(),
+        ])
+        .with_labels(vec![
+            Label::primary((), span.clone()).with_message("unterminated comment here")
+        ])
+}
+
 pub fn build_invalid_escape_error(span: Range<usize>, escape: &str) -> Diagnostic<()> {
     Diagnostic::error()
         .with_message(format!(
@@ -85,4 +118,3 @@ pub fn build_invalid_escape_error(span: Range<usize>, escape: &str) -> Diagnosti
             Label::primary((), span.clone()).with_message("invalid escape sequence here")
         ])
 }
-

@@ -1,0 +1,12 @@
+[package]
+name = "tungsten_ast"
+authors.workspace = true
+license.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tungsten_lexer.workspace = true
+tungsten_utils.workspace = true
+tungsten_symbols.workspace = true
+bitflags = "2.6.0"

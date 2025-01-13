@@ -542,6 +542,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tungsten_ast"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "tungsten_lexer",
+ "tungsten_symbols",
+ "tungsten_utils",
+]
+
+[[package]]
 name = "tungsten_context"
 version = "0.1.0"
 dependencies = [
@@ -563,6 +573,7 @@ dependencies = [
  "memmap2",
  "tungsten_context",
  "tungsten_lexer",
+ "tungsten_parser",
  "tungsten_symbols",
  "tungsten_utils",
 ]
@@ -575,6 +586,19 @@ dependencies = [
  "codespan-reporting",
  "thiserror 2.0.9",
  "tungsten_context",
+ "tungsten_utils",
+]
+
+[[package]]
+name = "tungsten_parser"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "thiserror 2.0.9",
+ "tungsten_ast",
+ "tungsten_context",
+ "tungsten_lexer",
+ "tungsten_symbols",
  "tungsten_utils",
 ]
 

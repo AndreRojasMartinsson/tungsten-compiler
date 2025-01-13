@@ -7,7 +7,6 @@ use codespan_reporting::{
         Chars,
     },
 };
-use colored::Colorize;
 use std::path::{Path, PathBuf};
 use tungsten_symbols::SymbolTable;
 
@@ -31,9 +30,7 @@ fn get_name(path: &Path) -> Result<&str> {
 
 #[derive(Debug, Clone)]
 pub struct CompilerContext<'a> {
-    pub symbols: SymbolTable,
-    pub current_scope: Option<SymbolTable>,
-
+    scopes: Vec<SymbolTable>,
     file: SimpleFile<&'a str, &'a str>,
 
     file_name: &'a str,
@@ -54,14 +51,29 @@ impl<'a> CompilerContext<'a> {
             file_path,
             file: SimpleFile::new(file_name, source_code),
             file_name,
+            scopes: vec![],
             source_code,
             artifact_dir,
-            current_scope: None,
             target_architecture: guess_host_target_triple(),
-            symbols: SymbolTable::new(None),
             errors: Vec::new(),
             optimization_level: 0,
         }
+    }
+
+    pub fn push_scope(&mut self) {
+        self.scopes.push(SymbolTable::new());
+    }
+
+    pub fn pop_scope(&mut self) -> Option<SymbolTable> {
+        self.scopes.pop()
+    }
+
+    pub fn current_scope(&mut self) -> Option<&SymbolTable> {
+        self.scopes.last()
+    }
+
+    pub fn current_scope_mut(&mut self) -> Option<&mut SymbolTable> {
+        self.scopes.last_mut()
     }
 
     pub fn set_target_triple(&mut self, target_triple: String) -> &mut Self {
@@ -77,11 +89,6 @@ impl<'a> CompilerContext<'a> {
     pub fn add_error(&mut self, diag: Diagnostic<()>) {
         self.errors.push(diag);
     }
-
-    // pub fn add_error(&mut self, err: &str) -> &mut Self {
-    //     self.errors.push(err.to_string());
-    //     self
-    // }
 
     pub fn emit_errors(&mut self) {
         if self.errors.is_empty() {
@@ -100,6 +107,8 @@ impl<'a> CompilerContext<'a> {
         for error in self.errors.clone() {
             term::emit(&mut writer, &config, &self.file, &error).unwrap();
         }
+
+        self.errors.clear();
     }
 
     pub fn source(&self) -> String {

@@ -5,6 +5,7 @@ use args::{get_command, Command};
 use memmap2::Mmap;
 use tungsten_context::CompilerContext;
 use tungsten_lexer::Lexer;
+use tungsten_parser::Parser;
 
 mod args;
 
@@ -59,10 +60,13 @@ fn main() -> Result<()> {
             let source = read_file(&file_name).context("failed to read file")?;
 
             let mut ctx = create_context(&file_name, &source, &out_dir, opt_level);
-            let mut lexer = Lexer::new(&mut ctx, &source);
+
+            let mut ctx_lex = ctx.clone();
+            let mut lexer = Lexer::new(&mut ctx_lex, &source);
             let tokens = lexer.tokenize();
 
-            println!("{tokens:#?}");
+            let mut parser = Parser::new(&mut ctx, &source);
+            println!("{:#?}", parser.parse(&tokens))
         }
     };
 

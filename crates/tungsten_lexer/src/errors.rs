@@ -1,11 +1,12 @@
-use std::ops::Range;
-
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum LexerError {
     #[error("illegal character: `{ch}`, in `{ctx}`")]
     IllegalCharacter { ch: char, ctx: &'static str },
+
+    #[error("unterminated comment")]
+    UnterminatedComment,
 
     #[error("encountered non-ascii character `{0}`")]
     NonAsciiCharacter(char),

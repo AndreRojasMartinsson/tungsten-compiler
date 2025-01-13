@@ -1,7 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use bitflags::bitflags;
-use indextree::{Arena, NodeId};
 use tungsten_utils::Atom;
 
 bitflags! {
@@ -31,91 +30,53 @@ pub struct Symbol {
 }
 
 #[derive(Debug, Clone)]
-pub enum SymbolAttributeValue {}
+pub enum SymbolAttributeValue {
+    String(Atom),
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct SymbolTable {
     symbols: HashMap<Atom, Symbol>,
-    parent: Option<NodeId>,
 }
 
 impl SymbolTable {
-    pub fn new(parent: Option<NodeId>) -> Self {
+    pub fn new() -> Self {
         Self {
             symbols: HashMap::new(),
-            parent,
         }
     }
 
-    pub fn add_symbol(&mut self, name: Atom, flags: SymbolFlags) {
+    pub fn add_symbol(
+        &mut self,
+        name: Atom,
+        flags: SymbolFlags,
+        attributes: Option<HashMap<Atom, SymbolAttributeValue>>,
+    ) {
         let symbol = Symbol {
             name: name.clone(),
             flags,
-            attributes: HashMap::new(),
+            attributes: attributes.unwrap_or_default(),
         };
 
         self.symbols.insert(name, symbol);
     }
 
-    pub fn set_attribute<'a>(
-        &'a mut self,
-        name: Atom,
-        attribute: Atom,
-        value: SymbolAttributeValue,
-        arena: Option<&'a mut Arena<SymbolTable>>,
-    ) {
-        if let Some(symbol) = self.get_symbol_mut(name, arena) {
+    pub fn set_attribute(&mut self, name: Atom, attribute: Atom, value: SymbolAttributeValue) {
+        if let Some(symbol) = self.get_symbol_mut(name) {
             symbol.attributes.insert(attribute, value);
         }
     }
 
-    pub fn get_attribute<'a>(
-        &'a self,
-        name: Atom,
-        attribute: Atom,
-        arena: Option<&'a Arena<SymbolTable>>,
-    ) -> Option<&'a SymbolAttributeValue> {
-        self.get_symbol(name, arena)?.attributes.get(&attribute)
+    pub fn get_attribute(&self, name: Atom, attribute: Atom) -> Option<&SymbolAttributeValue> {
+        self.get_symbol(name)?.attributes.get(&attribute)
     }
 
-    pub fn get_symbol_mut<'a>(
-        &'a mut self,
-        name: Atom,
-        arena: Option<&'a mut Arena<SymbolTable>>,
-    ) -> Option<&'a mut Symbol> {
-        if let Some(symbol) = self.symbols.get_mut(&name) {
-            return Some(symbol);
-        }
-
-        if let Some(arena) = arena {
-            if let Some(parent_id) = self.parent {
-                if let Some(parent_table) = arena.get_mut(parent_id) {
-                    return parent_table.get_mut().get_symbol_mut(name, None);
-                }
-            }
-        }
-
-        None
+    pub fn get_symbol_mut(&mut self, name: Atom) -> Option<&mut Symbol> {
+        self.symbols.get_mut(&name)
     }
 
-    pub fn get_symbol<'a>(
-        &'a self,
-        name: Atom,
-        arena: Option<&'a Arena<SymbolTable>>,
-    ) -> Option<&'a Symbol> {
-        if let Some(symbol) = self.symbols.get(&name) {
-            return Some(symbol);
-        }
-
-        if let Some(arena) = arena {
-            if let Some(parent_id) = self.parent {
-                if let Some(parent_table) = arena.get(parent_id) {
-                    return parent_table.get().get_symbol(name, Some(arena));
-                }
-            }
-        }
-
-        None
+    pub fn get_symbol(&self, name: Atom) -> Option<&Symbol> {
+        self.symbols.get(&name)
     }
 
     pub fn contains(&self, name: Atom) -> bool {

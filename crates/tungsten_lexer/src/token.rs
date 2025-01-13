@@ -4,7 +4,7 @@ use tungsten_utils::Atom;
 
 use crate::{kind::Kind, position::Position};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub span: Range<usize>,
     pub position: Position,
@@ -13,17 +13,16 @@ pub struct Token {
     pub value: Option<Value>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Value {
     String(Atom),
     Integer(u64),
     Float(f64),
     Boolean(bool),
-    Character(char),
     Primitive(PrimitiveType),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PrimitiveType {
     String,
     Boolean,

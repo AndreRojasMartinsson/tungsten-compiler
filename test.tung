@@ -1,3 +1,34 @@
-pub func main() {
+func: float => addition(a: float, b: float) {
+  var result: float <| a + b;
+
+  |> result;
+}
+
+$ Generic Types "SomeType<T, U>" or "SomeType<float, bool, str>"
+$ Array Types "[uint]" or "[uint:4]"
+$ Tuple Types "(<uint, bool, float>)"
+
+
+pub func: uint => main() {
+  $> var mut fifty: uint <| 50;
+  var a_float: float <| 70.55;
+
+  const root: float <| 5.5;
+
+
+  repeat {
+    --fifty;
+  } until fifty < 40;
+
+  repeat {
+    ++fifty;
+  } while fifty <= 50;
+  <$
+
+
+  $|> 0;
+}
+
+func: int => addition(a: bool, b: bool) {
 
 }
